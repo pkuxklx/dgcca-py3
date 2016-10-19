@@ -27,9 +27,9 @@ Key
 * `opt.py`   -- Optimizers, update network weights given current parameter values and gradient
 * `mlp.py`   -- Definition of view-specific feedforward networks
 * `wgcca.py` -- Weighted linear GCCA implementation.  Used as subroutine to compute gradient.
-* `dgcca.py` -- Defintion of full DGCCA model
+* `dgcca.py` -- Definition of full DGCCA model
 * `dgcca_train_harness.py` -- Command-line tool to build and train DGCCA model 
 * `dgcca_test.py` -- Test suite
 
 Adrian Benton
-Please contact *firstname dot lastname at gmail dot com* if you have any questions/suggestions/concerns/comments.
+Please contact *firstname dot lastname at gmail dot com* if you have any questions, suggestions, concerns, or comments.
