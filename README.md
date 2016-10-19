@@ -13,6 +13,8 @@ To run the test suite:
     cd src
     python dgcca_test.py
 
+Pdfs of synthetic data reported in "....". .... are written under "test/" (original views, linear GCCA, and deep GCCA embeddings)
+
 An example script for training a DGCCA model (using 3 different optimizers in series):
 
     cd src
