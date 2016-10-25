@@ -45,7 +45,7 @@ class WeightedGCCA:
     except:
       self.eps = [np.float32(eps) for i in range(self.V)] # Assume eps is same for each view
     
-    self.W  = [np.float32(v) for v in viewWts] if viewWts else [np.float32(1.) for v in range(V)] # How much we should weight each view -- defaults to equal weighting
+    self.W  = [np.float32(v) for v in viewWts] if viewWts is not None else [np.float32(1.) for v in range(V)] # How much we should weight each view -- defaults to equal weighting
     
     self.U = None # Projection from each view to shared space
     self.G = None # Embeddings for training examples

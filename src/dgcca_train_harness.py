@@ -146,12 +146,12 @@ if __name__ == '__main__':
                       help='dimensionality of embeddings')
   parser.add_argument('--truncparam', default=1000, type=int, required=False,
                       help='rank of low-rank approximation to view matrices (for GCCA) -- default: 1000')
-  parser.add_argument('--keptviews', default=None,
-                      type=int, nargs='+',
-                      help='indices of views to learn model over.  Defaults to using all views')
-  #parser.add_argument('--weights', default=None,
-  #                    type=float, nargs='+',
-  #                    help='how much to weight each view in the WGCCA objective -- defaults to equal weighting')
+  #parser.add_argument('--keptviews', default=None,
+  #                    type=int, nargs='+',
+  #                    help='indices of views to learn model over -- defaults to using all views')
+  parser.add_argument('--weights', default=None,
+                      type=float, nargs='+',
+                      help='how much to weight each view in the WGCCA objective -- defaults to equal weighting')
   parser.add_argument('--rcov', default=1.e-8,
                       type=float, nargs='+',
                       help='how much regularization to add to each view\'s covariance matrix.')
@@ -206,8 +206,10 @@ if __name__ == '__main__':
     # Make sure we can build the optimizer
     optimizer = opt.jsonToOpt(args.opt)
     
+    weights = [np.float32(w) for w in args.weights] if (args.weights is not None) else [np.float32(1.0) for r in rcov]
+    
     arch    = DGCCAArchitecture(netArch, args.k, args.truncparam, activationFn)
-    lparams = LearningParams(rcov=rcov, l1=args.l1, l2=args.l2,
+    lparams = LearningParams(rcov=rcov, viewWts=args.weights, l1=args.l1, l2=args.l2,
                              batchSize=args.batchSize, epochs=args.epochs,
                              optStr=args.opt, valFreq=args.valfreq)
     

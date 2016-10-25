@@ -48,13 +48,16 @@ class LearningParams:
   Parameters affecting how we learn this model.
   '''
   
-  def __init__(self, rcov, l1, l2, batchSize, epochs, optStr, valFreq=1):
+  def __init__(self, rcov, viewWts, l1, l2, batchSize, epochs, optStr, valFreq=1):
     '''
     Parameters
     ----------
     rcov: [ float ]
         Small amount of regularization to apply to covariance matrix for each
         projected view.
+    viewWts: [ float ]
+        How much to weight each view in GCCA objective.  Also weights learaning when
+        backpropagating gradient.
     l1: [ float ]
         L1 regularization applied uniformly to network weights per view
     l2: [ float ]
@@ -72,6 +75,7 @@ class LearningParams:
     '''
     
     self.rcov    = rcov
+    self.viewWts = viewWts
     self.l1      = l1
     self.l2      = l2
     self.batchSize = batchSize
@@ -85,10 +89,17 @@ class DGCCAModel:
   a scipy implementation.
   '''
   
-  def __init__(self, architecture, rcov=1.e-12, viewNames=None, seed=-1):
+  def __init__(self, architecture, rcov=1.e-12, viewWts=1.0, viewNames=None, seed=-1):
     self.V      = len(architecture.viewMlps)
     self.arch   = architecture
     self.vnames = viewNames if (viewNames is not None) else ['View%d' % (i) for i, mlp in enumerate(self.arch.viewMlps)]
+    
+    if viewWts is None:
+      self.viewWts = [1.0 for i in range(self.V)]
+    elif type(viewWts) == float:
+      self.viewWts = [viewWts for i in range(self.V)]
+    else:
+      self.viewWts = viewWts
     
     # random seed to initialize network weights
     self._seed  = seed
@@ -99,8 +110,9 @@ class DGCCAModel:
     # Needed to get U and G to calculate gradient -- external to Theano graph
     self.gccaModule = WeightedGCCA( self.V,
                                     [ lwidths[-1] for lwidths in self.arch.viewMlps ],
-                                    self.arch.gccaDim, 
-                                    rcov, self.arch.truncParam, verbose=False )
+                                    self.arch.gccaDim,
+                                    rcov, self.arch.truncParam, viewWts=self.viewWts,
+                                    verbose=False )
     
     self.Us = [] # Keep track of weights mapping from network output layer to multiview layer.
     self.Bs = [] # Bias terms in final layer -- used to mean-center projections.
@@ -126,20 +138,21 @@ class DGCCAModel:
       self.shared_outputs.append(net.shared_output)
       K_missing.append(net.missing)
     
-    Kdenom = 1./T.sum(K_missing, axis=0)
-    Kdenom = Kdenom.reshape((K_missing[0].shape[0], 1))
+    weightedK = [w * K for K, w in zip(K_missing, self.viewWts) ]
+    Kdenom = 1./T.sum(weightedK, axis=0)
+    Kdenom = Kdenom.reshape((weightedK[0].shape[0], 1))
     
     Gprimes = []
     Gprimes_zeroed = []
     
     ### Construct theano function to map new data to shared space ###
-    for Gprime, K_i in zip(self.shared_outputs, K_missing):
+    for Gprime, K_i in zip(self.shared_outputs, weightedK):
       Gprimes.append( Gprime )
       Gprimes_zeroed.append( K_i.reshape((K_i.shape[0], 1)) * Gprime)
       #Gprimes_zeroed.append( T.tile(K_i.reshape((K_i.shape[0], 1)),
       #                              (1,Gprime.shape[1])) * Gprime)
     
-    self.__Gmean = (Kdenom * (T.sum( Gprimes_zeroed, axis=0)) )
+    self.__Gmean   = (Kdenom * (T.sum( Gprimes_zeroed, axis=0)) )
     self.__Gprimes = T.stack(Gprimes) # 3-tensor ( V x N x k )
     
     # Set B, centering term, based on train, and return output layers
@@ -227,8 +240,16 @@ class DGCCAModel:
       net.L1_reg.set_value( np.array(l1val).astype(theano.config.floatX) )
       net.L2_reg.set_value( np.array(l2val).astype(theano.config.floatX) )
     
-    for net in self.nets:
+    for w, net in zip(self.viewWts, self.nets):
       optimizer = opt.jsonToOpt(lparams.optStr)
+      
+      # Adjust learning rate based on view weighting
+      try:
+        optimizer.learningRate = optimizer.learningRate * w
+      except Exception as ex:
+        print ('Cannot adjust learning rate of optimizer "%s" for view "%s"' %
+               (optimizer.__class__.__name__, net.vname))
+      
       net.setOptimizer(optimizer)
   
   def train(self, lparams, trainViews, trainMissingData, tuneViews=None, tuneMissingData=None, logger=None, calcGMinibatch=False):
@@ -277,8 +298,7 @@ class DGCCAModel:
                              for i in range(len(trainViews))]
     
     # Because we backprop w/ SGD, need to split up data into minibatches.
-    # We'll reshuffle order in which minibatch steps are taken, but not the
-    # batches themselves.
+    # We reshuffle order in which minibatch steps are taken every epoch.
     minibatch_indices = []
     for i in range(0, math.ceil(trainViews[0].shape[0]/bsize) ):
       sidx = i*bsize
@@ -355,6 +375,18 @@ class DGCCAModel:
     trainG, trainLbda, Us = self.gccaModule.G, self.gccaModule.lbda, self.gccaModule.U
     for Ushared, Uval in zip(self.Us, Us):
       Ushared.set_value( Uval.astype(theano.config.floatX) )
+    
+    # Check reconstruction error one last time. . .
+    trainErr = self.reconstructionErr(trainViews, trainMissingData, trainG)
+    if tuneViews is not None:
+      tuneErr = self.reconstructionErr(tuneViews, tuneMissingData)
+    else:
+      tuneErr = float('nan')
+    
+    endTime = time.time()
+    epochTime = endTime - startTime
+    
+    yield epoch, trainErr, tuneErr, epochTime
   
   def reconstructionErr(self, views, missingData=None, G=None):
     '''
@@ -369,9 +401,17 @@ class DGCCAModel:
       decompK = [missingData[:,i] for i in range(missingData.shape[1])]
       G = self.getGmean(*(views + decompK))
     
-    r_err = np.linalg.norm(missingData.T.reshape((missingData.shape[1],
-                                                  missingData.shape[0], 1)) *
+    #import pdb; pdb.set_trace()
+    
+    # Penalize views based on weighting
+    wts_tensor = [[[w]] for w in self.viewWts]
+    r_err = np.linalg.norm(wts_tensor * missingData.T.reshape((missingData.shape[1],
+                                                               missingData.shape[0], 1)) *
                            (G - Gprimes))**2
+    
+    #r_err = np.linalg.norm(missingData.T.reshape((missingData.shape[1],
+    #                                              missingData.shape[0], 1)) *
+    #                       (G - Gprimes))**2
     
     return r_err
 
@@ -421,7 +461,9 @@ class DGCCA:
     
     randSeed = randSeed if randSeed is not None else int(time.time())
     
-    self._model = DGCCAModel(self.arch, self.lparams.rcov, self.vnames, randSeed)
+    self._model = DGCCAModel(self.arch, self.lparams.rcov,
+                             self.lparams.viewWts, self.vnames,
+                             randSeed)
     
     if initWeights is not None:
       print('Initializing weights!')
@@ -448,6 +490,7 @@ class DGCCA:
            'arch_viewMlps':self.arch.viewMlps,
            'arch_gccaDim':self.arch.gccaDim,
            'lparam_rcov':self.lparams.rcov,
+           'lparam_viewWts':self.lparams.viewWts,
            'lparam_l1':self.lparams.l1,
            'lparam_l2':self.lparams.l2,
            'lparam_opt':self.lparams.optStr,
@@ -479,10 +522,16 @@ class DGCCA:
       print ('Initializing network w/o nonlinearities, do not recognize: %s' %
              (activationStr))
     
+    if 'lparam_viewWts' in model_desc:
+      viewWts = model_desc['lparam_viewWts']
+    else:
+      viewWts = [1.0 for i in range(len(model_desc['arch_viewMlps']))]
+    
     architecture = DGCCAArchitecture(viewMlps=model_desc['arch_viewMlps'],
                                      gccaDim=model_desc['arch_gccaDim'],
                                      activation=activation)
     lparams      = LearningParams(rcov=model_desc['lparam_rcov'],
+                                  viewWts=viewWts,
                                   l1=model_desc['lparam_l1'], l2=model_desc['lparam_l2'], 
                                   batchSize=model_desc['lparam_bsize'].item(),
                                   epochs=model_desc['lparam_epochs'].item(),

@@ -31,7 +31,7 @@ import pandas as pd
 
 import theano.tensor as T
 
-class TestWeightedGCCA(unittest.TestCase):
+class TestDGCCA(unittest.TestCase):
   def setUp(self):
     self.outDir = '../test'
     if not os.path.exists(self.outDir):
@@ -116,7 +116,7 @@ class TestWeightedGCCA(unittest.TestCase):
     arch = DGCCAArchitecture(viewMlpStruct, 2, activation=T.nnet.relu)
     
     # Little bit of L2 regularization -- learning params from matlab synthetic experiments
-    lparams = LearningParams( rcov=[0.01]*3, l1=[0.0]*3, l2=[5.e-4]*3,
+    lparams = LearningParams( rcov=[0.01]*3, viewWts=[1.0]*3, l1=[0.0]*3, l2=[5.e-4]*3,
                               optStr='{"type":"sgd","learningRate":0.01,"decay":1.0}',
                               batchSize=400,
                               epochs=10)
@@ -168,10 +168,10 @@ class TestWeightedGCCA(unittest.TestCase):
     self.views = [np.float32(d['view1']), np.float32(d['view2']), np.float32(d['view3'])]
     self.K = np.ones((400,3), dtype=np.float32)
     
-    arch = DGCCAArchitecture(viewMlpStruct, 2, activation=T.nnet.relu)
+    arch = DGCCAArchitecture(viewMlpStruct, 2, 2, activation=T.nnet.relu)
     
     # Little bit of L2 regularization -- learning params from matlab synthetic experiments
-    lparams = LearningParams( rcov=[0.01]*3, l1=[0.0]*3, l2=[5.e-4]*3,
+    lparams = LearningParams( rcov=[0.01]*3, viewWts=[1.0]*3, l1=[0.0]*3, l2=[5.e-4]*3,
           optStr='{"type":"adam","params":{"adam_b1":0.1,"adam_b2":0.001}}',
                               batchSize=400,
                               epochs=200)
@@ -212,6 +212,65 @@ class TestWeightedGCCA(unittest.TestCase):
         plt.legend(loc='best')
         plt.title('Deep G -- Epoch %d' % (epoch*200))
         pdf.savefig()
+  
+  def testWeightedDGCCA(self):
+    ''' See if we can weight views differently in the objective. '''
+    
+    viewMlpStruct = [ [2, 10, 10, 10, 2], [2, 10, 10, 10, 2], [2, 10, 10, 10, 2] ] # Each view has single-hidden-layer MLP with slightly wider hidden layers
+    
+    # Actual synthetic data used in paper plot...
+    d = scipy.io.loadmat('../resources/synthdata.mat')
+    self.views = [np.float32(d['view1']), np.float32(d['view2']), np.float32(d['view3'])]
+    self.K = np.ones((400,3), dtype=np.float32)
+    
+    for viewWts in [[1.0, 0.01, 1.0], [1.0, 0.5, 1.0], [0.01, 1.0, 1.0], [0.5, 1.0, 1.0]]:
+      viewWts = [np.float32(w) for w in viewWts]
+      wtStr = ','.join(['%.2f' % (w) for w in viewWts])
+      
+      arch = DGCCAArchitecture(viewMlpStruct, 2, 2, activation=T.nnet.relu)
+      
+      # Little bit of L2 regularization -- learning params from matlab synthetic experiments
+      lparams = LearningParams( rcov=[0.01]*3, viewWts=viewWts, l1=[0.0]*3, l2=[5.e-4]*3,
+            optStr='{"type":"adam","params":{"adam_b1":0.1,"adam_b2":0.001}}',
+                                batchSize=400,
+                                epochs=200)
+      vnames = ['View1', 'View2', 'View3']
+      
+      model = DGCCA(arch, lparams, vnames)
+      model.build()
+      
+      history = []
+      
+      # Plot to PDF
+      with PdfPages(os.path.join(self.outDir, 'dgccaData_weighted%s.pdf' % (wtStr))) as pdf:
+        for epoch in range(2):
+          if epoch > 0: # Want to plot random initialization first, so skip first iteration
+            history.extend(model.learn(self.views, tuneViews=None, trainMissingData=self.K,
+                                       tuneMissingData=None, embeddingPath=None,
+                                       modelPath=None, logPath=None, calcGMinibatch=False))
+          
+          # Plot output layers
+          outputViews = model._model.get_outputs_centered(*self.views)
+          for VIdx, output in enumerate(outputViews):
+            df = pd.DataFrame(output, columns=['x', 'y'])
+            df['Classes'] = self.classes
+            
+            fig = sns.lmplot(x="x", y="y", fit_reg=False, markers=['+', 'o'],
+                             legend=False, hue="Classes", data=df).fig
+            plt.legend(loc='best')
+            plt.title('View %d Output layer -- Epoch %d' % (VIdx, epoch*200))
+            pdf.savefig()
+          
+          # Plot multiview embeddings
+          G = model.apply(self.views, self.K)
+          df = pd.DataFrame(G, columns=['x', 'y'])
+          df['Classes'] = self.classes
+          
+          fig = sns.lmplot(x="x", y="y", fit_reg=False, markers=['+', 'o'],
+                           legend=False, hue="Classes", data=df).fig
+          plt.legend(loc='best')
+          plt.title('Deep G -- Epoch %d' % (epoch*200))
+          pdf.savefig()
   
   def testExternalGrad(self):
     '''
