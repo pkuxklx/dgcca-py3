@@ -23,22 +23,24 @@ class DGCCAArchitecture:
   Specifies architecture of DGCCA network.
   '''
   
-  def __init__(self, viewMlps, gccaDim, activation=T.nnet.relu):
+  def __init__(self, viewMlps, gccaDim, truncParam=1000, activation=T.nnet.relu):
     '''
     Parameters
     ----------
     viewMlps: [ [ int ] ]
-        Each element is an MLP for a
-        particular view, each integer is the layer width (first layer
-        being input, last layer is penultimate to shared multiview layer.)
+        Each element is an MLP for a particular view, each integer is the layer width
+        (first layer being input, last layer is penultimate to shared multiview layer.)
     gccaDim: int
         Dimensionality of multiview representation
+    truncParam: int
+        Quality of low-rank approximation to GCCA data matrices.
     activation: [ Theano function: Tensor -> Tensor ]
         Activation function for layers.
     '''
     
     self.viewMlps = viewMlps
     self.gccaDim  = gccaDim
+    self.truncParam = truncParam
     self.activation = activation
 
 class LearningParams:
@@ -97,8 +99,8 @@ class DGCCAModel:
     # Needed to get U and G to calculate gradient -- external to Theano graph
     self.gccaModule = WeightedGCCA( self.V,
                                     [ lwidths[-1] for lwidths in self.arch.viewMlps ],
-                                    self.arch.gccaDim,
-                                    rcov, verbose=False )
+                                    self.arch.gccaDim, 
+                                    rcov, self.arch.truncParam, verbose=False )
     
     self.Us = [] # Keep track of weights mapping from network output layer to multiview layer.
     self.Bs = [] # Bias terms in final layer -- used to mean-center projections.

@@ -140,7 +140,7 @@ class TestWeightedGCCA(unittest.TestCase):
     after applying GCCA, lie directly on each other.
     '''
     
-    wgcca = WeightedGCCA(3, [2, 2, 2], 2, 0.01)
+    wgcca = WeightedGCCA(3, [2, 2, 2], 2, 0.01, 2)
     wgcca = wgcca.learn(self.views, self.K)
     
     G = wgcca.G

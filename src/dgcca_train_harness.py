@@ -144,6 +144,8 @@ if __name__ == '__main__':
   parser.add_argument('--arch', default=None, help='architecture for each view network, given as list of lists of layer widths')
   parser.add_argument('--k', default=None, type=int, required=True,
                       help='dimensionality of embeddings')
+  parser.add_argument('--truncparam', default=1000, type=int, required=False,
+                      help='rank of low-rank approximation to view matrices (for GCCA) -- default: 1000')
   parser.add_argument('--keptviews', default=None,
                       type=int, nargs='+',
                       help='indices of views to learn model over.  Defaults to using all views')
@@ -204,7 +206,7 @@ if __name__ == '__main__':
     # Make sure we can build the optimizer
     optimizer = opt.jsonToOpt(args.opt)
     
-    arch    = DGCCAArchitecture(netArch, args.k, activationFn)
+    arch    = DGCCAArchitecture(netArch, args.k, args.truncparam, activationFn)
     lparams = LearningParams(rcov=rcov, l1=args.l1, l2=args.l2,
                              batchSize=args.batchSize, epochs=args.epochs,
                              optStr=args.opt, valFreq=args.valfreq)

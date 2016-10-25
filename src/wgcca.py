@@ -30,10 +30,11 @@ class WeightedGCCA:
   Implemented with batch SVD.
   '''
   
-  def __init__(self, V, F, k, eps, viewWts=None, verbose=True):
+  def __init__(self, V, F, k, eps, truncParam, viewWts=None, verbose=True):
     self.V = V # Number of views
     self.F = F # Number of features per view
     self.k = k # Dimensionality of embedding we want to learn
+    self.truncParam = truncParam # Take rank-truncParam SVD of data matrices
     
     # Regularization for each view
     try:
@@ -96,7 +97,7 @@ class WeightedGCCA:
       # Find T by just manipulating singular values.  Matrices are all diagonal,
       # so this should be fine.
       
-      S_thin = S[:self.k]
+      S_thin = S[:self.truncParam]
       
       S2_inv = 1. / (np.multiply( S_thin, S_thin ) + eps)
       
@@ -121,7 +122,7 @@ class WeightedGCCA:
                                                                              _Stilde_scaled)
       else:
         # Keep the left singular vectors of view j
-        As.append(A[:,:self.k])
+        As.append(A[:,:self.truncParam])
         Ts.append(T)
         Ts_unnorm.append(T_unnorm)
       
@@ -163,15 +164,15 @@ class WeightedGCCA:
       
     self.U = [] # Mapping from views to latent space
     self.U_unnorm = [] # Mapping, without normalizing variance
-    self._partUs = []
+    #self._partUs = []
     
-    # Now compute canonical weights
+    # Get mapping to shared space
     for idx, (eps, f, view) in enumerate(zip(self.eps, self.F, views)):
       R = scipy.linalg.qr(view, mode='r')[0]
       Cjj_inv = np.linalg.inv( (R.transpose().dot(R) + eps * np.eye( f )) )
       pinv = Cjj_inv.dot( view.transpose() )
       
-      self._partUs.append(pinv)
+      #self._partUs.append(pinv)
       
       self.U.append(pinv.dot( self.G ))
       self.U_unnorm.append(pinv.dot( self.G_scaled ))

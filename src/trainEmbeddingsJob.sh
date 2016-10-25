@@ -23,6 +23,7 @@ bsize=4000
 #bsize=1000
 #numEpochs=50
 numEpochs=200
+truncParam=1000 # How many left singular vectors to keep in our data matrices
 
 # Training parameters
 architecture=${1} # Set architecture of each view
@@ -43,5 +44,5 @@ MODEL_PATH="${OUT_DIR}/models/${BASE}.model.npz"
 LOG_PATH="${OUT_DIR}/logs/${BASE}.log.txt"
 HISTORY_PATH="${OUT_DIR}/logs/${BASE}.history.npz"
 
-echo "python dgcca_train_harness.py --input ${IN_PATH} --preptrain ${TRAIN_PATH} --preptune ${TUNE_PATH} --output ${EMBEDDINGS_PATH} --model ${MODEL_PATH} --arch \"${architecture}\" --k ${k} --rcov ${rcov} ${rcov} ${rcov} ${rcov} ${rcov} ${rcov} --learningRate ${lr} --batchSize ${bsize} --l1 ${l1} --l2 ${l2} --vnames ${vnameStr} --activation ${activation} --epochs ${numEpochs} --lcurvelog ${HISTORY_PATH} --warmstart | tee -a ${LOG_PATH}"
-python dgcca_train_harness.py --input ${IN_PATH} --preptrain ${TRAIN_PATH} --preptune ${TUNE_PATH} --output ${EMBEDDINGS_PATH} --model ${MODEL_PATH} --arch "${architecture}" --k ${k} --rcov ${rcov} ${rcov} ${rcov} ${rcov} ${rcov} ${rcov} --learningRate ${lr} --batchSize ${bsize} --l1 ${l1} --l2 ${l2} --vnames ${vnameStr} --activation ${activation} --epochs ${numEpochs} --lcurvelog ${HISTORY_PATH} --warmstart | tee -a ${LOG_PATH}
+echo "python dgcca_train_harness.py --input ${IN_PATH} --preptrain ${TRAIN_PATH} --preptune ${TUNE_PATH} --output ${EMBEDDINGS_PATH} --model ${MODEL_PATH} --arch \"${architecture}\" --truncparam ${truncParam} --k ${k} --rcov ${rcov} ${rcov} ${rcov} ${rcov} ${rcov} ${rcov} --learningRate ${lr} --batchSize ${bsize} --l1 ${l1} --l2 ${l2} --vnames ${vnameStr} --activation ${activation} --epochs ${numEpochs} --lcurvelog ${HISTORY_PATH} --warmstart | tee -a ${LOG_PATH}"
+python dgcca_train_harness.py --input ${IN_PATH} --preptrain ${TRAIN_PATH} --preptune ${TUNE_PATH} --output ${EMBEDDINGS_PATH} --model ${MODEL_PATH} --arch "${architecture}" --k ${k} --truncparam ${truncParam} --rcov ${rcov} ${rcov} ${rcov} ${rcov} ${rcov} ${rcov} --learningRate ${lr} --batchSize ${bsize} --l1 ${l1} --l2 ${l2} --vnames ${vnameStr} --activation ${activation} --epochs ${numEpochs} --lcurvelog ${HISTORY_PATH} --warmstart | tee -a ${LOG_PATH}
