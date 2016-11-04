@@ -1,19 +1,20 @@
 # dgcca
 Python Implementation of Deep Generalized Canonical Correlation Analysis as described in 
-"....". ..... ICLR 2017.
+*Adrian Benton, Huda Khayrallah, Biman Gujral, Drew Reisinger, Sheng Zhang, and Raman Arora. Deep Generalized Canonical Correlation Analysis.*  In submission to ICLR 2017.
 
 Tested with:
 
 + Python 3.5.2
 + theano 0.8.2
 + scipy 0.17.0, numpy 1.10.4
++ matplotlib 1.5.1 (for test suite)
 
 To run the test suite:
 
     cd src
     python dgcca_test.py
 
-Pdfs of synthetic data reported in "....". .... are written under "test/" (original views, linear GCCA, and deep GCCA embeddings)
+Pdfs of synthetic data described in *Deep Generalized Canonical Correlation Analysis* are written under "test/" (original views, linear GCCA, and deep GCCA embeddings)
 
 An example script for training a DGCCA model (using 3 different optimizers in series):
 
@@ -32,6 +33,7 @@ Key
 * `dgcca.py` -- Definition of full DGCCA model
 * `dgcca_train_harness.py` -- Command-line tool to build and train DGCCA model 
 * `dgcca_test.py` -- Test suite
+* `trainEmbeddingsJob.sh` -- A more flexible version of `trainEmbeddingsJob_sample_grid.sh`
 
 Adrian Benton
 Please contact *firstname dot lastname at gmail dot com* if you have any questions, suggestions, concerns, or comments.
