@@ -14,7 +14,7 @@ To run the test suite:
     cd src
     python dgcca_test.py
 
-Pdfs of synthetic data described in *Deep Generalized Canonical Correlation Analysis* are written under "test/" (original views, linear GCCA, and deep GCCA embeddings)
+This should take a few minutes to run on a personal laptop, time mostly spent compiling theano computation graphs.  Pdfs of synthetic data described in *Deep Generalized Canonical Correlation Analysis* are written under "test/" (original views, linear GCCA, and deep GCCA embeddings)
 
 An example script for training a DGCCA model (using 3 different optimizers in series):
 
