@@ -95,9 +95,10 @@ class TestDGCCA(unittest.TestCase):
         plt.legend(loc='best')
         plt.title('View %d' % (viewIdx))
         pdf.savefig()
-    
+        fig.close()
+  
   def tearDown(self):
-    ''' Remove generated files '''
+    ''' Remove generated files? '''
     pass
   
   def testSerializeModel(self):
@@ -134,6 +135,33 @@ class TestDGCCA(unittest.TestCase):
       for lIdx, reloadedWts in enumerate(reloadedView):
         self.assertTrue( np.allclose(reloadedWts, origWts[vIdx][lIdx]) )
   
+  def testApplyModel(self):
+    ''' Make sure we can apply model to a heldout set -- infer G '''
+    
+    viewMlpStruct = [ [2, 5, 2], [2, 5, 2], [2, 5, 2] ] 
+    
+    # Actual data used in ICML draft...
+    d = scipy.io.loadmat('../resources/synthdata.mat')
+    self.views = [d['view1'], d['view2'], d['view3']]
+    self.K = np.ones((400,3))
+    self.K[:5,0] = 0.; self.K[5:10,1] = 0.; self.K[10:15,2] = 0.
+    
+    arch = DGCCAArchitecture(viewMlpStruct, 2, activation=T.nnet.relu)
+    
+    # Little bit of L2 regularization -- learning params from matlab synthetic experiments
+    lparams = LearningParams( rcov=[0.01]*3, viewWts=[1.0]*3, l1=[0.0]*3, l2=[5.e-4]*3,
+                              optStr='{"type":"sgd","learningRate":0.01,"decay":1.0}',
+                              batchSize=400,
+                              epochs=10)
+    vnames = ['View1', 'View2', 'View3']
+    
+    model = DGCCA(arch, lparams, vnames)
+    model.build(initWeights=None, randSeed=12345)
+    
+    newG = model.apply(self.views, missingData=self.K, isTrain=False)
+    
+    print('Applying model yields G of shape %s' % (str(newG.shape)))
+  
   def testGCCA(self):
     '''
     Linear projection of views to latent space.  Classes should not be linearly separable
@@ -154,6 +182,8 @@ class TestDGCCA(unittest.TestCase):
       plt.legend(loc='best')
       plt.title('Vanilla GCCA mapping')
       pdf.savefig()
+      fig.close()
+      
   
   def testDGCCA(self):
     '''
@@ -201,6 +231,7 @@ class TestDGCCA(unittest.TestCase):
           plt.legend(loc='best')
           plt.title('View %d Output layer -- Epoch %d' % (VIdx, epoch*200))
           pdf.savefig()
+          fig.close()
         
         # Plot multiview embeddings
         G = model.apply(self.views, self.K)
@@ -212,6 +243,7 @@ class TestDGCCA(unittest.TestCase):
         plt.legend(loc='best')
         plt.title('Deep G -- Epoch %d' % (epoch*200))
         pdf.savefig()
+        fig.close()
   
   def testWeightedDGCCA(self):
     ''' See if we can weight views differently in the objective. '''
@@ -260,6 +292,7 @@ class TestDGCCA(unittest.TestCase):
             plt.legend(loc='best')
             plt.title('View %d Output layer -- Epoch %d' % (VIdx, epoch*200))
             pdf.savefig()
+            fig.close()
           
           # Plot multiview embeddings
           G = model.apply(self.views, self.K)
@@ -271,6 +304,7 @@ class TestDGCCA(unittest.TestCase):
           plt.legend(loc='best')
           plt.title('Deep G -- Epoch %d' % (epoch*200))
           pdf.savefig()
+          fig.close()
   
   def testExternalGrad(self):
     '''
