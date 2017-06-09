@@ -1,6 +1,6 @@
 # dgcca
 Python Implementation of Deep Generalized Canonical Correlation Analysis as described in 
-*Adrian Benton, Huda Khayrallah, Biman Gujral, Drew Reisinger, Sheng Zhang, and Raman Arora. Deep Generalized Canonical Correlation Analysis.*  In submission to ICLR 2017.
+*Adrian Benton, Huda Khayrallah, Biman Gujral, Drew Reisinger, Sheng Zhang, and Raman Arora. Deep Generalized Canonical Correlation Analysis.*  https://arxiv.org/abs/1702.02519
 
 Tested with:
 
