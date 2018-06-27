@@ -95,7 +95,7 @@ class TestDGCCA(unittest.TestCase):
         plt.legend(loc='best')
         plt.title('View %d' % (viewIdx))
         pdf.savefig()
-        fig.close()
+        plt.close(fig)
   
   def tearDown(self):
     ''' Remove generated files? '''
@@ -182,7 +182,7 @@ class TestDGCCA(unittest.TestCase):
       plt.legend(loc='best')
       plt.title('Vanilla GCCA mapping')
       pdf.savefig()
-      fig.close()
+      plt.close(fig)
       
   
   def testDGCCA(self):
@@ -231,7 +231,7 @@ class TestDGCCA(unittest.TestCase):
           plt.legend(loc='best')
           plt.title('View %d Output layer -- Epoch %d' % (VIdx, epoch*200))
           pdf.savefig()
-          fig.close()
+          plt.close(fig)
         
         # Plot multiview embeddings
         G = model.apply(self.views, self.K)
@@ -243,7 +243,7 @@ class TestDGCCA(unittest.TestCase):
         plt.legend(loc='best')
         plt.title('Deep G -- Epoch %d' % (epoch*200))
         pdf.savefig()
-        fig.close()
+        plt.close(fig)
   
   def testWeightedDGCCA(self):
     ''' See if we can weight views differently in the objective. '''
@@ -292,7 +292,7 @@ class TestDGCCA(unittest.TestCase):
             plt.legend(loc='best')
             plt.title('View %d Output layer -- Epoch %d' % (VIdx, epoch*200))
             pdf.savefig()
-            fig.close()
+            plt.close(fig)
           
           # Plot multiview embeddings
           G = model.apply(self.views, self.K)
@@ -304,7 +304,7 @@ class TestDGCCA(unittest.TestCase):
           plt.legend(loc='best')
           plt.title('Deep G -- Epoch %d' % (epoch*200))
           pdf.savefig()
-          fig.close()
+          plt.close(fig)
   
   def testExternalGrad(self):
     '''
