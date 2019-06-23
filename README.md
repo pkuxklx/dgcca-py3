@@ -1,6 +1,7 @@
 # dgcca
 Python Implementation of Deep Generalized Canonical Correlation Analysis as described in 
-*Adrian Benton, Huda Khayrallah, Biman Gujral, Dee Ann Reisinger, Sheng Zhang, and Raman Arora. Deep Generalized Canonical Correlation Analysis.*  https://arxiv.org/abs/1702.02519
+
+*Adrian Benton, Huda Khayrallah, Biman Gujral, Dee Ann Reisinger, Sheng Zhang, and Raman Arora. Deep Generalized Canonical Correlation Analysis. The 4th Workshop on Representation Learning for NLP. 2019*
 
 Tested with:
 
@@ -36,4 +37,4 @@ Key
 * `trainEmbeddingsJob.sh` -- A more flexible version of `trainEmbeddingsJob_sample_grid.sh`
 
 Adrian Benton
-Please contact *firstname dot lastname at gmail dot com* if you have any questions, suggestions, concerns, or comments.
+Please contact __abenton10 [at] bloomberg [dot] net__ if you have any questions, suggestions, concerns, or comments.
