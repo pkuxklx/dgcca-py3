@@ -37,4 +37,4 @@ Key
 * `trainEmbeddingsJob.sh` -- A more flexible version of `trainEmbeddingsJob_sample_grid.sh`
 
 Adrian Benton
-Please contact __adrian [dot] benton [at] google [dot] com__ if you have any questions, suggestions, concerns, or comments.
+Please contact __adrian [dot] benton [at] gmail [dot] com__ if you have any questions, suggestions, concerns, or comments.
