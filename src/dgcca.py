@@ -108,8 +108,8 @@ class DGCCAModel:
       np.random.seed(self._seed)
     
     # Needed to get U and G to calculate gradient -- external to Theano graph
-    self.gccaModule = WeightedGCCA( self.V,
-                                    [ lwidths[-1] for lwidths in self.arch.viewMlps ],
+    self.gccaModule = WeightedGCCA( self.V, # number of views
+                                    [ lwidths[-1] for lwidths in self.arch.viewMlps ], # 
                                     self.arch.gccaDim,
                                     rcov, self.arch.truncParam, viewWts=self.viewWts,
                                     verbose=False )
