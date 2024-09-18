@@ -64,7 +64,7 @@ class WeightedGCCA:
     # K^{-1/2}, which just weights each example based on number of non-zero
     # views.  Will fail if there are any empty examples.
     if K is None:
-      K = np.float32(np.ones((views[0].shape[0], len(views))))
+      K = np.float32(np.ones((views[0].shape[0], len(views)))) # shape=(n_samples, n_views), all ones
     else:
       K = np.float32(K)
     
