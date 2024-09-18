@@ -69,7 +69,7 @@ class WeightedGCCA:
       K = np.float32(K)
     
     # We do not want to count missing views we are downweighting heavily/zeroing out, so scale K by W
-    K = K.dot(np.diag(self.W))
+    K = K.dot(np.diag(self.W)) # K.shape unchanged
     Ksum = np.sum(K, axis=1)
     
     # If we have some missing rows after weighting, then make these small & positive.
@@ -85,8 +85,8 @@ class WeightedGCCA:
     
     N = views[0].shape[0]
     
-    _Stilde  = np.float32(np.zeros(self.k))
-    _Gprime = np.float32(np.zeros((N, self.k)))
+    _Stilde  = np.float32(np.zeros(self.k)) # shape=(n_views, )
+    _Gprime = np.float32(np.zeros((N, self.k))) # shape=(n_samples, n_views)
     _Stilde_scaled = np.float32(np.zeros(self.k))
     _Gprime_scaled = np.float32(np.zeros((N, self.k)))
     
@@ -105,7 +105,7 @@ class WeightedGCCA:
             np.sqrt(
               np.multiply( np.multiply( S_thin, S2_inv ), S_thin )
             )
-          )
+          ) # shape=(truncParam, truncParam)
       
       # Keep singular values
       T_unnorm = np.diag( S_thin + eps )
