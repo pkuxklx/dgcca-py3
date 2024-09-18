@@ -110,7 +110,7 @@ class DGCCAModel:
     # Needed to get U and G to calculate gradient -- external to Theano graph
     self.gccaModule = WeightedGCCA( self.V, # number of views
                                     [ lwidths[-1] for lwidths in self.arch.viewMlps ], # list of MLPs' output dimensions
-                                    self.arch.gccaDim,
+                                    self.arch.gccaDim, # latent representation's dimension
                                     rcov, self.arch.truncParam, viewWts=self.viewWts,
                                     verbose=False )
     
